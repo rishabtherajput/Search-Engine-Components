@@ -23,7 +23,8 @@ def get_single(item_url):
     soup = BeautifulSoup(plain_text, features="html.parser")
     for item_name in soup.find_all('p'):
         print(item_name.string)
+    for link in soup.find_all('a'):
+        href = 'https://nicoblog.org' + link.get('href')
+        print(href)
 
-
-
-trade(1)
+trade(2)
