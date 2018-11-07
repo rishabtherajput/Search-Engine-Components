@@ -1,30 +1,60 @@
-import requests
-from bs4 import BeautifulSoup
+import os
 
-def trade(max_pages):
-    page = 1
-    while page <= max_pages:
-        url = 'https://nicoblog.org/pc-games/page/'+ str(page)
-        source_code = requests.get(url)
-        plain_text =  source_code.text
-        soup = BeautifulSoup(plain_text,features="html.parser")
-        for link in soup.find_all('a',{'rel':'bookmark'}):
-            href = link.get('href')
-            title = link.string
-            #print(href)
-            #print(title)
-            get_single(href)
-        page = page+1
+#each website is a different project
+
+def create_project_dir(directory):
+    if not os.path.exists(directory):
+        print('Creating folder' + directory)
+        os.makedirs(directory)
+
+#create queue and crawled files
+
+def create_data_files(project_name,base_url):
+    queue = project_name + '/queue.txt'
+    crawled =  project_name + '/crawled.txt'
+    if not os.path.isfile(queue):
+        write_file(queue, base_url)
+    if not os.path.isfile(crawled):
+        write_file(crawled,'')
+
+#create a new file
+
+def write_file(path,data):
+    f = open(path,'w')
+    f.write(data)
+    f.close()
+
+# add data onto a existing file
+
+def append_to_file(path,data):
+    with open(path,'a',encoding = 'utf-8') as file:
+        file.write(data + '\n')
+
+# delete the content on file
+
+def delete_file_content(path):
+    with open(path,'w'):
+        pass
+
+# file conversion to set items
+
+def file_to_set(file_name):
+    results = set()
+    with open(file_name,'r') as f:
+        for line in f:
+            results.add(line.replace('\n',''))
+    return results
+
+#set conversion to file
+
+def set_to_file(links,file):
+    delete_file_content(file)
+    for link in sorted(links):
+        append_to_file(file, link)
 
 
-def get_single(item_url):
-    source_code = requests.get(item_url)
-    plain_text = source_code.text
-    soup = BeautifulSoup(plain_text, features="html.parser")
-    for item_name in soup.find_all('p'):
-        print(item_name.string)
-    for link in soup.find_all('a'):
-        href = 'https://nicoblog.org' + link.get('href')
-        print(href)
 
-trade(2)
+
+
+
+

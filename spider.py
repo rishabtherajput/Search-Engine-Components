@@ -1,40 +1,80 @@
-import requests
-from bs4 import BeautifulSoup
-import operator
-
-def start(url):
-    word_list = []
-    source_code = requests.get(url).text
-    soup = BeautifulSoup(source_code,features="html.parser")
-    for post_text in soup.find_all('a',{'rel':'bookmark'}):
-        content = post_text.text
-        words = content.lower().split()
-        for each_word in words:
-            word_list.append(each_word)
-    clean_up(word_list)
-
-def clean_up(word_list):
-    clean_word_list = []
-    for word in word_list:
-        symbols = "!@#$%^&*()_+<>?:\"{}|,./;'[]\-=\'"
-        for i in range(0,len(symbols)):
-            word = word.replace(symbols[i],"")
-        if len(word)>0:
-            print(word)
-            clean_word_list.append(word)
-        create_dictionary(clean_word_list)
-
-def create_dictionary(clean_word_list):
-    word_count = {}
-    for word in clean_word_list:
-        if word in word_count:
-            word_count[word] += 1
-        else:
-            word_count[word] = 1
-    for key,value in sorted(word_count.items(),key = operator.itemgetter(1)):
-        print(key,value)
+from urllib.request import urlopen
+from link_finder import LinkFinder
+from domain import *
+from webcrawler import *
 
 
+class Spider:
+
+    #class variables
+    project_name = ''
+    base_url = ''
+    domain_name = ''
+    queue_file = ''
+    crawled_file = ''
+    queue = set()
+    crawled = set()
+
+    def __init__(self, project_name,base_url,domain_name):
+        Spider.project_name = project_name
+        Spider.base_url = base_url
+        Spider.domain_name = domain_name
+        Spider.queue_file = Spider.project_name + '/queue.txt'
+        Spider.crawled_file = Spider.project_name + '/crawled.txt'
+        self.boot()
+        self.crawl_page('First Spider', Spider.base_url)
 
 
-start('https://nicoblog.org/')
+    @staticmethod
+    def boot():
+        create_project_dir(Spider.project_name)
+        create_data_files(Spider.project_name, Spider.base_url)
+        Spider.queue = file_to_set(Spider.queue_file)
+        Spider.crawled = file_to_set(Spider.crawled_file)
+
+    @staticmethod
+    def crawl_page(thread_name, page_url):
+        if page_url not in Spider.crawled:
+            print(thread_name + 'crawling ' + page_url)
+            print('Queue ' + str(len(Spider.queue)) + '| crawled' +str(len(Spider.crawled)))
+            Spider.add_links_to_queue(Spider.gather_links(page_url))
+            Spider.queue.remove(page_url)
+            Spider.crawled.add(page_url)
+            Spider.update_files()
+
+    @staticmethod
+    def gather_links(page_url):
+        html_string = ''
+        try:
+            response = urlopen(page_url)
+            if 'text/html' in response.getheader('Content-Type'):
+                html_bytes = response.read()
+                html_string = html_bytes.decode("utf-8")
+            finder = LinkFinder(Spider.base_url, page_url)
+            finder.feed(html_string)
+        except Exception as e:
+            print(str(e))
+            return set()
+        return finder.page_links()
+
+    # Saves queue data to project files
+    @staticmethod
+    def add_links_to_queue(links):
+        for url in links:
+            if (url in Spider.queue) or (url in Spider.crawled):
+                continue
+            if Spider.domain_name != get_domain_name(url):
+                continue
+            Spider.queue.add(url)
+
+    @staticmethod
+    def update_files():
+        set_to_file(Spider.queue, Spider.queue_file)
+        set_to_file(Spider.crawled, Spider.crawled_file)
+
+
+
+
+
+
+
