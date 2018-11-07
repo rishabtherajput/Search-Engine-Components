@@ -27,7 +27,7 @@ def write_file(path,data):
 # add data onto a existing file
 
 def append_to_file(path,data):
-    with open(path,'a',encoding = 'utf-8') as file:
+    with open(path,'a',encoding = 'latin-1') as file:
         file.write(data + '\n')
 
 # delete the content on file
